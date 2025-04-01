@@ -23,7 +23,7 @@ constexpr int DATA_LEN = 1000;
 constexpr int M = 4;
 constexpr int COUNT_CADR = 12;
 constexpr int symbol_len = DATA_LEN/M;
-constexpr int COUNT_TESTS = 300;
+constexpr int COUNT_TESTS = 100;
 constexpr double normalizeCoef = 1/sqrt(N);
 // constexpr int EbN0_dB_MAX = 15;
 // #define RECOWER	// Раскомментировать если нужно провести обратный процесс
@@ -36,7 +36,7 @@ int iGl = 0;
 
 void Data_produce(char*, int*);
 void Symbol_produce(unsigned char*, char*);
-void Modulation(unsigned char*, double **);
+void Modulation(unsigned char*, fftw_complex*);
 void Modulation_16PSK(unsigned char *, double**);
 void Demodulation(unsigned char * , double**);
 void Decoding_produse(unsigned char*, char*);
@@ -69,7 +69,7 @@ int main()
 		// Для передатчика
 		fftw_plan planBack;
 		// Заранее создаем план для ОБПФ. 
-		planBack = fftw_plan_dft_1d(N, offtDataIn, offtDataOut, FFTW_BACKWARD, FFTW_EXHAUSTIVE /*| FFTW_DESTROY_INPUT*/);
+		planBack = fftw_plan_dft_1d(N, offtDataIn, offtDataOut, FFTW_BACKWARD, FFTW_EXHAUSTIVE | FFTW_DESTROY_INPUT);
 
 		#ifdef RECOWER
 		// Для приемника и проверки
@@ -130,11 +130,6 @@ int main()
 		char buff[DATA_LEN];
 		memset(buff, 0, sizeof(char)*DATA_LEN);
 
-		double** symbolCoding = static_cast<double**>(malloc(2 * sizeof(double*)));
-		for (int i = 0; i < 2; ++i) {
-			symbolCoding[i] = static_cast<double*>(malloc(COUNT_CADR * sizeof(double)));
-		}
-
 		#ifdef RECOWER
 		char buff_out[COUNT_CADR];
 		unsigned char cadrs_out[COUNT_CADR];
@@ -184,19 +179,9 @@ int main()
 				// for (i = 0; i < COUNT_CADR; i++)
 				// 	std::cout << i << " "<< std::bitset<4>(cadrs[i]) << std::endl;
 
-				Modulation(cadrs, symbolCoding);
-
-				// printf("Промодулированные данные на комплексную плоскость:\n");
-				// for (i = 0; i < COUNT_CADR; i++)
-				// 	printf("%4b = %+f %+fj\n", cadrs[i], symbolCoding[0][i], symbolCoding[1][i]);
+				Modulation(cadrs, offtDataIn);
 
 				// Здесь идет работа ОБПФ и дальнейшая передача.
-				// В будущем переменную symbolCoding можно заменить на fftDataIn
-				for (i = 0; i < COUNT_CADR; ++i)
-				{
-					offtDataIn[i][0] = symbolCoding[0][i];
-					offtDataIn[i][1] = symbolCoding[1][i];
-				}
 				// std::cout << "Start data:\n";
 				// for (i = 0; i < N; ++i)
 				// 	std::cout << "Real = " << offtDataIn[i][0] << " Mnim = " << offtDataIn[i][1] << std::endl;
@@ -349,29 +334,29 @@ void Decoding_produse(unsigned char* cadrs_out, char* buff_out)
 1110  |  3 | -1 |  3 - 1j
 1111  |  1 | -1 |  1 - 1j
  */
-inline void Modulation(unsigned char * cadrs, double **symbolCoding)
+inline void Modulation(unsigned char * cadrs, fftw_complex *symbolCoding)
 {
     // Вариант 1: swithc-case.
     for (i = 0; i < COUNT_CADR; ++i)
     {
         switch (cadrs[i]) {
-            case 0b0000: symbolCoding[0][i] = -3.0; symbolCoding[1][i] =  3.0; break; // 0
-            case 0b0001: symbolCoding[0][i] = -1.0; symbolCoding[1][i] =  3.0; break; // 1
-            case 0b0010: symbolCoding[0][i] = -3.0; symbolCoding[1][i] =  1.0; break; // 2
-            case 0b0011: symbolCoding[0][i] = -1.0; symbolCoding[1][i] =  1.0; break; // 3
-            case 0b0100: symbolCoding[0][i] = -3.0; symbolCoding[1][i] = -3.0; break; // 4
-            case 0b0101: symbolCoding[0][i] = -1.0; symbolCoding[1][i] = -3.0; break; // 5
-            case 0b0110: symbolCoding[0][i] = -3.0; symbolCoding[1][i] = -1.0; break; // 6
-            case 0b0111: symbolCoding[0][i] = -1.0; symbolCoding[1][i] = -1.0; break; // 7
-            case 0b1000: symbolCoding[0][i] =  3.0; symbolCoding[1][i] =  3.0; break; // 8
-            case 0b1001: symbolCoding[0][i] =  1.0; symbolCoding[1][i] =  3.0; break; // 9
-            case 0b1010: symbolCoding[0][i] =  3.0; symbolCoding[1][i] =  1.0; break; // 10
-            case 0b1011: symbolCoding[0][i] =  1.0; symbolCoding[1][i] =  1.0; break; // 11
-            case 0b1100: symbolCoding[0][i] =  3.0; symbolCoding[1][i] = -3.0; break; // 12
-            case 0b1101: symbolCoding[0][i] =  1.0; symbolCoding[1][i] = -3.0; break; // 13
-            case 0b1110: symbolCoding[0][i] =  3.0; symbolCoding[1][i] = -1.0; break; // 14
-            case 0b1111: symbolCoding[0][i] =  1.0; symbolCoding[1][i] = -1.0; break; // 15
-            default:   symbolCoding[0][i] = 0.0; symbolCoding[1][i] = 0.0; // Обработка неожиданной ситуации (опционально)
+            case 0b0000: symbolCoding[i][0] = -3.0; symbolCoding[i][1] =  3.0; break; // 0
+            case 0b0001: symbolCoding[i][0] = -1.0; symbolCoding[i][1] =  3.0; break; // 1
+            case 0b0010: symbolCoding[i][0] = -3.0; symbolCoding[i][1] =  1.0; break; // 2
+            case 0b0011: symbolCoding[i][0] = -1.0; symbolCoding[i][1] =  1.0; break; // 3
+            case 0b0100: symbolCoding[i][0] = -3.0; symbolCoding[i][1] = -3.0; break; // 4
+            case 0b0101: symbolCoding[i][0] = -1.0; symbolCoding[i][1] = -3.0; break; // 5
+            case 0b0110: symbolCoding[i][0] = -3.0; symbolCoding[i][1] = -1.0; break; // 6
+            case 0b0111: symbolCoding[i][0] = -1.0; symbolCoding[i][1] = -1.0; break; // 7
+            case 0b1000: symbolCoding[i][0] =  3.0; symbolCoding[i][1] =  3.0; break; // 8
+            case 0b1001: symbolCoding[i][0] =  1.0; symbolCoding[i][1] =  3.0; break; // 9
+            case 0b1010: symbolCoding[i][0] =  3.0; symbolCoding[i][1] =  1.0; break; // 10
+            case 0b1011: symbolCoding[i][0] =  1.0; symbolCoding[i][1] =  1.0; break; // 11
+            case 0b1100: symbolCoding[i][0] =  3.0; symbolCoding[i][1] = -3.0; break; // 12
+            case 0b1101: symbolCoding[i][0] =  1.0; symbolCoding[i][1] = -3.0; break; // 13
+            case 0b1110: symbolCoding[i][0] =  3.0; symbolCoding[i][1] = -1.0; break; // 14
+            case 0b1111: symbolCoding[i][0] =  1.0; symbolCoding[i][1] = -1.0; break; // 15
+            default:   symbolCoding[i][0] = 0.0; symbolCoding[i][1] = 0.0; // Обработка неожиданной ситуации (опционально)
         }
     }
 
