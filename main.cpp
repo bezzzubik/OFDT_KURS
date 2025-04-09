@@ -152,8 +152,9 @@ int main()
 			// timeStart = time(NULL);
 
 			// while(timeStart == time(NULL))
-			for(unsigned long long kk = 0; kk < 20000000; ++kk)
-			// while (iGl < maxLen)
+			// while(getchar() != '\n');
+			for(unsigned long long kk = 0; kk < 20000; ++kk, iGl = 0)
+			while (iGl < maxLen)
 			{
 				if (iGl >= maxLen)
 					iGl = 0;

@@ -10,4 +10,4 @@ cd FlameGraph
 ./stackcollapse-perf.pl ../perf.unfold > perf.folded
 
 # 4. Генерация Flame Graph
-./flamegraph.pl perf.folded > flamegraph.svg
+./flamegraph.pl perf.folded > ../flamegraph.svg
