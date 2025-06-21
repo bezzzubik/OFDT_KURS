@@ -3,9 +3,9 @@
 #include <mutex>
 #include <iostream>
 
-// #define PRINT_TIME
+#define PRINT_TIME
 std::mutex print;
-constexpr int PERIOD_PRINT = 100000;
+constexpr int PERIOD_PRINT = 50000;
 constexpr int COUNT_SR_TIME = 100;
 
 

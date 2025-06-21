@@ -2,7 +2,7 @@
 #include <chrono>
 #include <thread>
 
-// #define TAKTING
+#define TAKTING
 
 
 class FrecTh

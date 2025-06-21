@@ -36,11 +36,6 @@ void restoreCanonicalMode()
 
 
 
-void p2s(std::stop_token stoken)
-{
-
-}
-
 
 
 // main работает с терминальным выводом, обработкой статистики, управлением потоками

@@ -1,0 +1,549 @@
+/*
+Обязательные флаги при компиляции: -lfftw3 -lm
+*/
+#include<stdio.h>
+#include<stdlib.h>
+#include<time.h>
+#include<cstring>
+#include<iostream>
+#include<math.h>
+#include <bitset>
+#include <fftw3.h>
+#include <vector>
+#include <complex>
+#include <chrono>
+
+
+constexpr int N = 21; // Число комплексных чисел, которые одновременно обрабатывает одна операция ОБПФ
+					 // В будущем сюда добавятся комплексные числа для поддержания точности.
+constexpr int DATA_LEN = 14191;
+constexpr int COUNT_CADR = 2;		// Количество кадров
+constexpr int COUNT_TESTS = 100;
+constexpr double normalizeCoef = 1/sqrt(N);	// Нормализующий коэффициент0
+constexpr int COUNT_SR_TIME = 10000;
+
+// #define RECOWER	// Раскомментировать если нужно провести обратный процесс
+
+unsigned long timeStart; 
+
+
+int i;
+int iGl = 0;
+
+void Data_produce(char*, int*);
+void Symbol_produce(unsigned char*, char*);
+void Modulation(unsigned char*, fftw_complex*);
+void Modulation_16PSK(unsigned char *, double**);
+void Demodulation(unsigned char * , double**);
+void Decoding_produse(unsigned char*, char*);
+void OFFTW_func(fftw_plan, fftw_complex*);
+std::complex<double> short_modulation(unsigned char);
+
+int main()
+{
+	// запишем комплексные числа как двумерный массив float.
+	std::vector<std::complex<double>> X(N);      // Входной спектр (заполните его!)
+	std::vector<std::complex<double>> offtDataOut(N); // Выходной сигнал
+  
+	// Инициализируем начальный массив данных:
+	for (i = 0; i < N; ++i)
+	{
+		X[i] = short_modulation(i);
+	}
+
+		unsigned char cadrs[COUNT_CADR];
+
+		// char buff[DATA_LEN] = "GSKFAGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergeGSKFAGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98GSKFAGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98AGDSJNGKIEFENINSIDnasjdgisaugjasjgbaruibvaijsdviaeivnawirbauerbiawbriaijsjfjjkdksjdfhhjfdkghskjdhfgk1326897798465546321asdgjnksjdangsajdkgnkasegnoiawejgioanbjfbuiaugwaueuaiwevuirvgrgaaergearugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123RGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98arugiauirhguiaehrguihaeruighui3huih2jfkridlsoa3uihgw9e8y8w74t7wat9g56awe67awetgaw79egv679gwaefwa8e7r9386R593TRGYFEGAIWEUHGYUOAWETRTAW8TFGUAGBIByuiagvbfhuieaygt87reag987auioaguiguvagviuabsuvbeuawvbiuaegyuftaw78g98";
+		char buff[DATA_LEN] = "asdefrga";
+		int maxLen = strlen(buff);
+		// memset(buff, 0, sizeof(char)*DATA_LEN);
+
+		#ifdef RECOWER
+		char buff_out[COUNT_CADR];
+		unsigned char cadrs_out[COUNT_CADR];
+
+		double** symbolCodingOut = static_cast<double**>(malloc(2 * sizeof(double*)));
+		for (int i = 0; i < 2; ++i) {
+			symbolCodingOut[i] = static_cast<double*>(malloc(COUNT_CADR * sizeof(double)));
+		}
+		#endif
+
+		printf("Введите строку\n");
+
+		// Data_produce(buff, &maxLen);
+
+		printf("Введенная строка: %s\nЧисло символов в строке: %d\n", buff, maxLen);
+
+		// timeStart = time(NULL);
+		long l = 0;
+		long long glob = 0;
+		int lss = 1;
+
+		std::chrono::system_clock::time_point startTime;
+		std::chrono::duration<double> srTime[COUNT_TESTS];
+		std::chrono::duration<double> nowSrTime;
+
+		for (lss = 0; lss < COUNT_TESTS; ++lss)
+		{
+			printf("Тест %d\n", lss);
+			l = 0;
+			// timeStart = time(NULL);
+			// Выравнивание времени:
+			// while (timeStart == time(NULL));
+
+			// timeStart = time(NULL);
+
+			// while(timeStart == time(NULL))
+			// while(getchar() != '\n');
+			startTime = std::chrono::system_clock::now();
+			for(unsigned long long kk = 0; kk < COUNT_SR_TIME; ++kk, iGl = 0)
+			while (iGl < maxLen)
+			{
+				if (iGl >= maxLen)
+					iGl = 0;
+				// printf("\nКадр: %ld\n", iGl/6+1);
+				// printf("Строка обработки:\n");
+				// for (i = (iGl/6) * 6; i < (iGl/6 + 1) * 6; i++)
+				// 	printf("%c", buff[i]);
+				// printf("\n");
+
+				// printf("Данные, обработанные на этом этапе:\n");
+				// for (i = (iGl/6) * 6; i < (iGl/6 + 1) * 6; i++)
+				// 	printf("%8b\n", buff[i]);
+
+				Symbol_produce(cadrs, buff);
+
+				// for (i = 0; i < COUNT_CADR; i++)
+				// 	std::cout << i << " "<< std::bitset<4>(cadrs[i]) << std::endl;
+
+				for (int n = 0; n < N; ++n) {
+					std::complex<double> sum(0.0, 0.0);
+					for (int k = 0; k < N; ++k) {
+					  double angle = 2 * M_PI * k * n / static_cast<double>(N);
+					  sum += X[k] * std::complex<double>(cos(angle), sin(angle));
+					}
+					offtDataOut[n] = sum * normalizeCoef; // Нормировка и сохранение результата
+				  }
+
+				// std::cout << "Rezult OFFT: \n ";
+				// for (i = 0; i < N; ++i)
+				// 	std::cout << "Real = " << offtDataOut[i].real() << " Mnim = " << offtDataOut[i].imag() << std::endl;
+
+				#ifdef RECOWER
+				// Обратный процесс:
+				for (i = 0; i < N; ++i)
+				{
+					fftDataIn[i][0] = offtDataOut[i][0];
+					fftDataIn[i][1] = offtDataOut[i][1];
+				}
+				// БПФ
+				fftw_execute(planForward);
+				// Нормализация
+				for (i = 0; i < N; ++i)
+				{
+					fftDataOut[i][0] = fftDataOut[i][0] * normalizeCoef;
+					fftDataOut[i][1] = fftDataOut[i][1] * normalizeCoef;
+				}
+
+				for (i = 0; i < COUNT_CADR; ++i)
+				{
+					symbolCodingOut[0][i] = fftDataOut[i][0];
+					symbolCodingOut[1][i] = fftDataOut[i][1];
+				}
+				// std::cout << "\n\nFFT:" << std::endl;
+				// for (i = 0; i < N; ++i)
+				// 	std::cout << "Real = " << fftDataOut[i][0] << " Mnim = " << fftDataOut[i][1] << std::endl;
+
+				Demodulation(cadrs_out, symbolCodingOut);
+				// printf("Демодулированные данные:\n");
+				// for (i = 0; i < COUNT_CADR; ++i)
+				// 	std::cout << i << " "<< std::bitset<4>(cadrs_out[i]) << std::endl;
+
+				// printf("\n\nДекодирование:\n");
+				Decoding_produse(cadrs_out, buff_out);
+				// printf("Декодированные данные:\n");
+				// for (int i = 0; i < COUNT_CADR/2; i++)
+				// 	printf("%c\n", buff_out[i]);
+				#endif
+				++l;
+			}
+			printf("Число пройденных циклов: %ld\n", l);
+			glob += l;
+			srTime[lss] = std::chrono::duration<double>(std::chrono::system_clock::now() - startTime);
+			nowSrTime += srTime[lss];
+		}
+		printf("Итоговое среднее число пройденных циклов: %lld\n", glob/COUNT_TESTS);
+		std::cout << "Время прохождения:" << std::endl;
+
+		for (i = 0; i < COUNT_TESTS; ++i)
+			std::cout << srTime[i].count() << std::endl;
+		std::cout << "Среднее время прохождения = " << nowSrTime.count() / COUNT_TESTS << std::endl;
+
+        // Здесь делаем ОБПФ для каждого кадра по отдельности
+
+
+        /*
+		Gaussnoise(EbN0_dB);
+		Demodulation();
+		Erd = Erdproduce();
+		Mrd = Mrdproduce();
+		printf("Eb/N0 %d dB\t Symbol_Error: %f \t Bit_Error:%f \n", i, Mrd, Erd);
+        */
+
+	return 0;
+}
+
+
+inline void OFFTW_func(fftw_plan planBack, fftw_complex* offtDataOut)
+{
+	// ОБПФ
+	fftw_execute(planBack);
+	// Нормализация. В будущем заменить в зависимости от параметров приемника-передатчика
+	for (i = 0; i < N; ++i)
+	{
+		offtDataOut[i][0] *= normalizeCoef;
+		offtDataOut[i][1] *= normalizeCoef;
+	}
+}
+
+
+
+
+
+// Тут просто будет ввод текста и ожидание подтверждения отправки.
+void Data_produce(char* buff, int* maxLen)
+{
+	char c;
+	int i = -1;
+	while((buff[++i] = getchar()) !='\n');
+	buff[i] = 0;
+	*maxLen = i;
+}
+
+
+// Преобразование символов в кадры по 4 бита. (Проверено)
+inline void Symbol_produce(unsigned char* cadrs, char* buff)
+{
+    for (i = 0; i < COUNT_CADR; ++i, ++iGl)
+    {
+        cadrs[i] = buff[iGl] & 0b1111;
+        cadrs[++i] = buff[iGl] >> 4 & 0b1111;
+    }
+}
+
+// Преобразование кадра в символы. (Проверено)
+void Decoding_produse(unsigned char* cadrs_out, char* buff_out)
+{
+    int i, ss;
+    for (i = 0, ss = 0; i < COUNT_CADR; i+=2, ++ss)
+    {
+		buff_out[ss] = cadrs_out[i] | (cadrs_out[i+1] << 4);
+    }
+}
+
+
+
+std::complex<double> short_modulation(unsigned char cadrs)
+{
+	std::complex<double> symbolCoding;
+	switch (cadrs) {
+		case 0b0000: symbolCoding.real(-3.0); symbolCoding.imag(3.0); break; // 0
+		case 0b0001: symbolCoding.real(-1.0); symbolCoding.imag(3.0); break; // 1
+		case 0b0010: symbolCoding.real(-3.0); symbolCoding.imag(1.0); break; // 2
+		case 0b0011: symbolCoding.real(-1.0); symbolCoding.imag(1.0); break; // 3
+		case 0b0100: symbolCoding.real(-3.0); symbolCoding.imag(3.0); break; // 4
+		case 0b0101: symbolCoding.real(-1.0); symbolCoding.imag(3.0); break; // 5
+		case 0b0110: symbolCoding.real(-3.0); symbolCoding.imag(1.0); break; // 6
+		case 0b0111: symbolCoding.real(-1.0); symbolCoding.imag(1.0); break; // 7
+		case 0b1000: symbolCoding.real( 3.0); symbolCoding.imag(3.0); break; // 8
+		case 0b1001: symbolCoding.real( 1.0); symbolCoding.imag(3.0); break; // 9
+		case 0b1010: symbolCoding.real( 3.0); symbolCoding.imag(1.0); break; // 10
+		case 0b1011: symbolCoding.real( 1.0); symbolCoding.imag(1.0); break; // 11
+		case 0b1100: symbolCoding.real( 3.0); symbolCoding.imag(3.0); break; // 12
+		case 0b1101: symbolCoding.real( 1.0); symbolCoding.imag(3.0); break; // 13
+		case 0b1110: symbolCoding.real( 3.0); symbolCoding.imag(1.0); break; // 14
+		case 0b1111: symbolCoding.real( 1.0); symbolCoding.imag(1.0); break; // 15
+		default: symbolCoding.real(0.0); symbolCoding.imag(0.0);
+	}
+	return symbolCoding;
+}
+
+
+
+// Модуляция. Реализованный 16-QAM алгоритм.
+// Возможно требуется нормализация I и Q
+// Попробовать преобразовать if-else во что-то более стабильное, либо в switch, либо в выражение
+/* Таблица соответствия
+Биты  | I  | Q  | Комплексное число (I + jQ)
+------|----|----|---------------------------
+0000  | -3 |  3 | -3 + 3j
+0001  | -1 |  3 | -1 + 3j
+0010  | -3 |  1 | -3 + 1j
+0011  | -1 |  1 | -1 + 1j
+0100  | -3 | -3 | -3 - 3j
+0101  | -1 | -3 | -1 - 3j
+0110  | -3 | -1 | -3 - 1j
+0111  | -1 | -1 | -1 - 1j
+1000  |  3 |  3 |  3 + 3j
+1001  |  1 |  3 |  1 + 3j
+1010  |  3 |  1 |  3 + 1j
+1011  |  1 |  1 |  1 + 1j
+1100  |  3 | -3 |  3 - 3j
+1101  |  1 | -3 |  1 - 3j
+1110  |  3 | -1 |  3 - 1j
+1111  |  1 | -1 |  1 - 1j
+ */
+inline void Modulation(unsigned char * cadrs, fftw_complex *symbolCoding)
+{
+    // Вариант 1: swithc-case.
+    for (i = 0; i < COUNT_CADR; ++i)
+    {
+        switch (cadrs[i]) {
+            case 0b0000: symbolCoding[i][0] = -3.0; symbolCoding[i][1] =  3.0; break; // 0
+            case 0b0001: symbolCoding[i][0] = -1.0; symbolCoding[i][1] =  3.0; break; // 1
+            case 0b0010: symbolCoding[i][0] = -3.0; symbolCoding[i][1] =  1.0; break; // 2
+            case 0b0011: symbolCoding[i][0] = -1.0; symbolCoding[i][1] =  1.0; break; // 3
+            case 0b0100: symbolCoding[i][0] = -3.0; symbolCoding[i][1] = -3.0; break; // 4
+            case 0b0101: symbolCoding[i][0] = -1.0; symbolCoding[i][1] = -3.0; break; // 5
+            case 0b0110: symbolCoding[i][0] = -3.0; symbolCoding[i][1] = -1.0; break; // 6
+            case 0b0111: symbolCoding[i][0] = -1.0; symbolCoding[i][1] = -1.0; break; // 7
+            case 0b1000: symbolCoding[i][0] =  3.0; symbolCoding[i][1] =  3.0; break; // 8
+            case 0b1001: symbolCoding[i][0] =  1.0; symbolCoding[i][1] =  3.0; break; // 9
+            case 0b1010: symbolCoding[i][0] =  3.0; symbolCoding[i][1] =  1.0; break; // 10
+            case 0b1011: symbolCoding[i][0] =  1.0; symbolCoding[i][1] =  1.0; break; // 11
+            case 0b1100: symbolCoding[i][0] =  3.0; symbolCoding[i][1] = -3.0; break; // 12
+            case 0b1101: symbolCoding[i][0] =  1.0; symbolCoding[i][1] = -3.0; break; // 13
+            case 0b1110: symbolCoding[i][0] =  3.0; symbolCoding[i][1] = -1.0; break; // 14
+            case 0b1111: symbolCoding[i][0] =  1.0; symbolCoding[i][1] = -1.0; break; // 15
+            default:   symbolCoding[i][0] = 0.0; symbolCoding[i][1] = 0.0; // Обработка неожиданной ситуации (опционально)
+        }
+    }
+
+    /*Вариант 2: Использование выражения*/
+    /*
+    for (i = 0; i < COUNT_CADR; i++)
+    {
+        symbolCoding[0][i] = (cadrs[i] >> 3) * 2 - 1;
+        symbolCoding[1][i] = ((cadrs[i] & 0b0010) >> 1) * 2 - 1;
+
+        if ((cadrs[i] & 0b0100)) symbolCoding[0][i] = symbolCoding[0][i] * 3;
+
+        if ((cadrs[i] & 0b0001)) symbolCoding[1][i] = symbolCoding[1][i] * 3;
+    }
+    */
+}
+
+
+/* Таблица соответствия для 16-PSK
+Биты  | I  | Q  
+------|----|----
+0000  | -3 |  3 	
+0001  | -3 |  2.25 	
+0010  | -3 |  1.5 	
+0011  | -3 |  0.75 	
+0100  | -3 | -3 	
+0101  | -3 | -2.25  
+0110  | -3 | -1.5 	
+0111  | -3 | -0.75  
+1000  |  3 |  3 	
+1001  |  3 |  2.25  
+1010  |  3 |  1.5 	
+1011  |  3 |  0.75  
+1100  |  3 | -3 	
+1101  |  3 | -2.25  
+1110  |  3 | -1.5 	
+1111  |  3 | -0.75 
+*/
+void Modulation_16PSK(unsigned char * cadrs, double** symbolCoding)
+{
+    // Вариант 1: swithc-case.
+    for (i = 0; i < COUNT_CADR; ++i)
+    {
+        switch (cadrs[i]) {
+            case 0b0000: symbolCoding[0][i] = -3.0; symbolCoding[1][i] =  3.0; break; // 0
+            case 0b0001: symbolCoding[0][i] = -3.0; symbolCoding[1][i] =  2.25; break; // 1
+            case 0b0010: symbolCoding[0][i] = -3.0; symbolCoding[1][i] =  1.5; break; // 2
+            case 0b0011: symbolCoding[0][i] = -3.0; symbolCoding[1][i] =  0.75; break; // 3
+            case 0b0100: symbolCoding[0][i] = -3.0; symbolCoding[1][i] = -3.0; break; // 4
+            case 0b0101: symbolCoding[0][i] = -3.0; symbolCoding[1][i] = -2.25; break; // 5
+            case 0b0110: symbolCoding[0][i] = -3.0; symbolCoding[1][i] = -1.5; break; // 6
+            case 0b0111: symbolCoding[0][i] = -3.0; symbolCoding[1][i] = -0.75; break; // 7
+            case 0b1000: symbolCoding[0][i] =  3.0; symbolCoding[1][i] =  3.0; break; // 8
+            case 0b1001: symbolCoding[0][i] =  3.0; symbolCoding[1][i] =  2.25; break; // 9
+            case 0b1010: symbolCoding[0][i] =  3.0; symbolCoding[1][i] =  1.5; break; // 10
+            case 0b1011: symbolCoding[0][i] =  3.0; symbolCoding[1][i] =  0.75; break; // 11
+            case 0b1100: symbolCoding[0][i] =  3.0; symbolCoding[1][i] = -3.0; break; // 12
+            case 0b1101: symbolCoding[0][i] =  3.0; symbolCoding[1][i] = -2.25; break; // 13
+            case 0b1110: symbolCoding[0][i] =  3.0; symbolCoding[1][i] = -1.5; break; // 14
+            case 0b1111: symbolCoding[0][i] =  3.0; symbolCoding[1][i] = -0.75; break; // 15
+            default:   symbolCoding[0][i] = 0.0; symbolCoding[1][i] = 0.0; // Обработка неожиданной ситуации (опционально)
+        }
+    }
+}
+
+
+
+void Demodulation_16PSK(unsigned char * cadrs_out, double** symbolCoding)
+{
+	for (int i = 0; i < COUNT_CADR; ++i)
+	{
+		if (symbolCoding[0][i] < 0)
+		{
+			cadrs_out[i] = 0b0000;
+		}
+		else 
+		{
+			cadrs_out[i] = 0b1000;
+		}
+
+
+		if (symbolCoding[1][i] < -2.625)
+		{
+			cadrs_out[i] |= 0b0100;
+		}
+		else if (symbolCoding[1][i] > 2.625)
+		{
+			cadrs_out[i] |= 0b0000;
+		}
+		else if (symbolCoding[1][i] > 1.875)
+		{
+			cadrs_out[i] |= 0b0001;
+		}
+		else if (symbolCoding[1][i] > 1.125)
+		{
+			cadrs_out[i] |= 0b0010;
+		}
+		else if (symbolCoding[1][i] > 0)
+		{
+			cadrs_out[i] |= 0b0010;
+		}
+		else if (symbolCoding[1][i] < -1.875)
+		{
+			cadrs_out[i] |= 0b0101;
+		}
+		else if (symbolCoding[1][i] < -1.125)
+		{
+			cadrs_out[i] |= 0b0110;
+		}
+		else
+		{
+			cadrs_out[i] |= 0b0111;
+		}
+	}
+}
+
+
+void Demodulation(unsigned char * cadrs_out, double** symbolCoding)
+{
+	for (int i = 0; i < COUNT_CADR; ++i)
+	{
+		if (symbolCoding[1][i] < -2.0)
+		{
+			cadrs_out[i] = 0b0000;
+		}
+		else if (symbolCoding[0][i] > 2.0)
+		{
+			cadrs_out[i] = 0b1000;
+		}
+		else if (symbolCoding[0][i] < 2.0 && symbolCoding[0][i] > 0.0)
+		{
+			cadrs_out[i] = 0b1001;
+		}
+		else
+		{
+			cadrs_out[i] = 0b0001;
+		}
+
+
+		if (symbolCoding[1][i] < -2.0)
+		{
+			cadrs_out[i] |= 0b0100;
+		}
+		else if (symbolCoding[1][i] > 2.0)
+		{
+			cadrs_out[i] |= 0b0000;
+		}
+		else if (symbolCoding[1][i] < 2.0 && symbolCoding[1][i] > 0.0)
+		{
+			cadrs_out[i] |= 0b0010;
+		}
+		else
+		{
+			cadrs_out[i] |= 0b0110;
+		}
+	}
+}
+
+
+
+
+
+
+
+/*
+double Gauss()
+{
+	double U, V, Z;
+
+	U = (double)(rand() + 1.0) / (double)(RAND_MAX + 1.0);
+	V = (double)(rand() + 1.0) / (double)(RAND_MAX + 1.0);
+	Z = sqrt(-2 * log(U)) * sin(2 * PI * V);
+
+	return Z;
+}
+
+void Gaussnoise(double EbN0_dB)
+{
+	double EbN0 = pow(10, EbN0_dB / 10);
+	double N0 = Eb / EbN0;
+	double sigma = sqrt(N0 / 2);
+
+	for (int i = 0; i < symbol_len; i++)
+	{
+		symbolCoding[0][i] = symbolCoding[0][i] + Gauss() * sigma;
+		symbolCoding[1][i] = symbolCoding[1][i] + Gauss() * sigma;
+	}
+}
+
+
+double Erdproduce()
+{
+	double Erd;
+	int Nrd = 0;
+	for (int i = 0; i < data_len; i++)
+	{
+		if (data_decoding[i] != data_bfcoding[i])
+			Nrd++;
+	}
+	Erd = (double)Nrd / (double)data_len;
+	return Erd;
+}
+
+double Mrdproduce()
+{
+	double Mrd;
+	int Srd = 0;
+	int p[M];
+	int pt;
+	for (int i = 0; i < symbol_len; i++)
+	{
+		int pt = 0;
+		for (int j = 0; j < M; j++)
+		{
+			if (symbol_decoding[j][i] == symbol_bfcoding[j][i])
+				p[j] = 0;
+			else
+				p[j] = 1;
+		}
+		for (int j = 0; j < M; j++)
+		{
+			pt = pt + p[j];
+		}
+
+		if (pt > 0)
+			Srd++;
+	}
+	Mrd = (double)Srd / (double)(symbol_len);
+	return Mrd;
+}
+*/
